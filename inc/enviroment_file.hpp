@@ -12,6 +12,21 @@ using std::ifstream;
 using std::string;
 using std::optional;
 
+class NoSuchFileException : public std::exception {
+    public:
+char * what () {
+        return "No such file or directory.";
+    }
+};
+
+class BadFileFormatException : public std::exception {
+    public:
+char * what () {
+        return "File is of an invalid file format.";
+    }
+};
+
+
 /**
  * @brief a class representing a .env file and allowing its manipulation
  * 
