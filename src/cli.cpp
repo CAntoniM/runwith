@@ -18,7 +18,7 @@ using std::vector;
 using std::ifstream;
 
 #ifdef TEST_CLI
-TEST_INIT()
+TEST_INIT(Cli)
 #endif
 
 Cli::Cli(int argc, char* argv[])  {
@@ -32,8 +32,8 @@ Cli::Cli(int argc, char* argv[])  {
         char enviroment_argument_short[] = "-e";
         char enviroment_argument_long[]  = "--env";
         bool is_enviroment_argument = 
-            strcmp(argv[index],enviroment_argument_short) ||
-            strcmp(argv[index],enviroment_argument_long);
+            strcmp(argv[index],enviroment_argument_short) == 0 ||
+            strcmp(argv[index],enviroment_argument_long) == 0;
         
         if ( is_enviroment_argument && !at_end_of_args && enviroment_file_path.empty()) {
             index ++;
@@ -44,8 +44,8 @@ Cli::Cli(int argc, char* argv[])  {
         char verbose_argument_short[] = "-v";
         char verbose_argument_long[]  = "--verbose";
         bool is_verbose_argument = 
-            strcmp(argv[index],verbose_argument_short) ||
-            strcmp(argv[index],verbose_argument_long);
+            strcmp(argv[index],verbose_argument_short) == 0 ||
+            strcmp(argv[index],verbose_argument_long) == 0;
         
         if (is_verbose_argument) {
             verbose = true;
@@ -68,7 +68,7 @@ Cli::Cli(int argc, char* argv[])  {
 }
 
 #ifdef TEST_CLI
-TEST(Cli_constructor, this is the main test of the Cli parsing and retrival of its results) {
+TEST(constructor, this is the main test of the Cli parsing and retrival of its results) {
     
 }
 #endif

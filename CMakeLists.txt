@@ -28,10 +28,10 @@ add_executable(test_enviroment_file src/enviroment_file.cpp)
 target_include_directories(test_enviroment_file PUBLIC inc)
 target_compile_definitions(test_enviroment_file PUBLIC TEST_ENVIROMENT_FILE)
 
-add_test(NAME EnviromentFile COMMAND test_enviroment_file)
+add_test(NAME EnviromentFile COMMAND test_enviroment_file -C Release)
 
 add_executable(test_cli src/cli.cpp)
 target_include_directories(test_cli PUBLIC inc)
 target_compile_definitions(test_cli PUBLIC TEST_CLI)
 
-add_test(NAME Cli COMMAND test_cli)
+add_test(NAME Cli COMMAND test_cli -C Release)

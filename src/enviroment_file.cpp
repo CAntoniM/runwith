@@ -14,7 +14,7 @@ using std::string;
 using std::optional;
 
 #ifdef TEST_ENVIROMENT_FILE
-TEST_INIT();
+TEST_INIT(EnviromentFile);
 #endif
 
 EnviromentFile::EnviromentFile(string file_name){
@@ -22,7 +22,12 @@ EnviromentFile::EnviromentFile(string file_name){
 }
 
 #ifdef TEST_ENVIROMENT_FILE
-TEST(EnviromentFile_constructor, a test to ensure the default constructor works) {
+TEST(constructor, a test to ensure the default constructor works) {
+    TEST_ASSERT(true,Figuring out if this works at all);
+    TEST_ASSERT(true,Figuring out if this works at all);
+    TEST_ASSERT(true,Figuring out if this works at all);
+    TEST_ASSERT(true,Figuring out if this works at all);
+    TEST_ASSERT(true,Figuring out if this works at all);
     TEST_ASSERT(true,Figuring out if this works at all);
 }
 #endif
@@ -66,6 +71,17 @@ void EnviromentFile::read(){
     }
 }
 
+#ifdef TEST_ENVIROMENT_FILE
+TEST(read, a test for the read function) {
+    TEST_ASSERT(true,Figuring out if this works at all);
+    TEST_ASSERT(true,Figuring out if this works at all);
+    TEST_ASSERT(true,Figuring out if this works at all);
+    TEST_ASSERT(true,Figuring out if this works at all);
+    TEST_ASSERT(true,Figuring out if this works at all);
+    TEST_ASSERT(true,Figuring out if this works at all);
+}
+#endif
+
 void EnviromentFile::write(){
     ofstream file;
     file.exceptions(ofstream::badbit);
@@ -81,6 +97,17 @@ void EnviromentFile::write(){
         exit(-1); 
     }
 }
+
+#ifdef TEST_ENVIROMENT_FILE
+TEST(write, a test for the write function) {
+    TEST_ASSERT(true,Figuring out if this works at all);
+    TEST_ASSERT(true,Figuring out if this works at all);
+    TEST_ASSERT(true,Figuring out if this works at all);
+    TEST_ASSERT(true,Figuring out if this works at all);
+    TEST_ASSERT(true,Figuring out if this works at all);
+    TEST_ASSERT(true,Figuring out if this works at all);
+}
+#endif
 
 optional<std::string> EnviromentFile::get(std::string key){
 
