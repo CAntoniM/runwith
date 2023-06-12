@@ -194,12 +194,18 @@ bool test_assert(bool result, std::string objective, std::string path, size_t li
     return result;
 }
 
+/**
+ * This generates the unique idenfier for the test given
+*/
 std::string generate_test_id(std::string prefix, std::shared_ptr<Test> test) {
     std::ostringstream id_stream;
     id_stream << prefix << "::" << test->name << "@" << test->file << ":" << test->line;
     return id_stream.str();
 }
 
+/**
+ * Returns the maximum length of a test id
+*/
 size_t max_test_id_length(std::string prefix) {
     size_t max_length = 0;
     for(std::map<std::string,std::shared_ptr<Test>>::iterator iterator = results.begin(); iterator != results.end(); iterator++) {
@@ -213,6 +219,9 @@ size_t max_test_id_length(std::string prefix) {
     return max_length;
 }
 
+/**
+ * This returns the number of tests that have been registered
+*/
 size_t number_of_tests() {
     size_t count = 0;
 
@@ -223,6 +232,9 @@ size_t number_of_tests() {
     return count;
 }
 
+/**
+ * This is a helper function for getting the number of tests that have failed at this point
+*/
 size_t number_of_failed_tests() {
     size_t count = 0;
 
@@ -235,6 +247,9 @@ size_t number_of_failed_tests() {
     return count;
 }
 
+/**
+ * Helper function for generating out the spacer that is put in after the test id this is done to make the output pretty
+*/
 std::string generate_spacer(size_t max_length, size_t current_length, size_t extra_space) {
     std::ostringstream spacer_buffer;
     spacer_buffer << " ";
@@ -315,6 +330,6 @@ int run_all_tests (int argc, char* argv[], std::string prefix) {
 
 #define TEST_INIT(PREFIX) int main (int argc, char* argv[] ) { return run_all_tests(argc,argv,STRINGIFY(PREFIX));}
 
-#define TEST_ASSERT(TEST,OBJECTIVE) test_assert(TEST,STRINGIFY(OBJECTIVE),__FILE__,__LINE__)
+#define TEST_ASSERT(TEST,OBJECTIVE) if (!test_assert(TEST,STRINGIFY(OBJECTIVE),__FILE__,__LINE__)) return;
 
 #endif
