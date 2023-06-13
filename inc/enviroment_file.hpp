@@ -33,30 +33,24 @@ char * what () {
  */
 class EnviromentFile {
     public:
-        EnviromentFile(string file_name);
         /**
-         * @brief changes the file name in memeory used to change where we write
-         * the file to.
-         * 
-         * @param file_name 
-         */
-        void file_name(string file_name);
-        /**
-         * @brief This returns the file name we are reading and writing from.
-         * 
-         * @return string 
-         */
-        string file_name();
+         * reads an enviroment file as a string and stores the result in memeory
+        */
+        void EnviromentFile::read(std::string text);
         /**
          * @brief reads the file from disk into memeory 
          * 
          */
-        void read();
+        void load(std::string file_name);
+        /**
+         * get the file in its text form;
+        */
+        std::string to_string();
         /**
          * @brief write from memory to disk
          * 
          */
-        void write();
+        void save(std::string file_name);
         /**
          * @brief This gets the value at that key if it exists.
          * 
@@ -99,7 +93,6 @@ class EnviromentFile {
         iterator end();
 
     private:
-        string _file_name;
         map<string, string> _data;
 };
 
