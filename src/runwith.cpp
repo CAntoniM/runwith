@@ -24,10 +24,12 @@ optional<string> get_enviroment_variable(string key) {
 void set_enviroment_variable(string key, optional<string> value) {
     
     ostringstream fmt;
-    char* output_variable;
-    
     fmt << key << "=" << value.value_or(string()) << std::ends;
-    strcpy(output_variable,fmt.str().c_str());
+    std::string text = fmt.str().c_str();
+
+    char* output_variable = (char*) malloc(text.length() + 1);
+
+    strcpy_s(output_variable,text.length() + 1,fmt.str().c_str());
 
     if (!putenv(output_variable)) {
         std::cerr << "ERROR: failed to write enviroment variable " << key << std::endl;
@@ -37,9 +39,9 @@ void set_enviroment_variable(string key, optional<string> value) {
 
 int main(int argc, char* argv[]) {
     Cli args(argc, argv);
-    EnviromentFile enviroment_file(args.enviroment_file());
+    EnviromentFile enviroment_file;
     
-    enviroment_file.read();
+    enviroment_file.load(args.enviroment_file());
     for(EnviromentFile::iterator iterator = enviroment_file.begin(); iterator != enviroment_file.end(); iterator++) {
         string key = iterator->first;
         optional<string> value = iterator->second.empty() ? std::nullopt : optional<string>{iterator->second};
