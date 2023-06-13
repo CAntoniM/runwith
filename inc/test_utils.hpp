@@ -8,7 +8,8 @@
 #include <vector>
 #include <functional>
 #include <iostream>
-#include <memory>
+#include <memory>   
+#include <chrono>
 
 
 /**
@@ -18,9 +19,8 @@
  * 
  * its general goals are:
  * 
- * 1. minimise external depdancies: if its not in the std c or c++ libs do we
- *    need it
- * 2. minimise the amount of effort required by the end user.
+ * 1. minimise external depdancies: if its not in the std c or c++ libs we should avoid it.
+ * 2. minimise the amount of effort required write tests.
  * 3. minimise the distance between the test code and the source code.
  * 
  * to achive this the idea is that we have this header file which contains all
@@ -38,7 +38,7 @@
  */
 
 /**
- * @brief a representation of thecurrent test status.
+ * @brief a representation of thecurrent test status
  * 
  */
 enum Status {
@@ -72,6 +72,7 @@ class Test {
     Status status;
     std::string file;
     size_t line;
+    std::chrono::microseconds test_duration;
     std::vector<std::shared_ptr<Assert>> asserts;
     std::function<void()> test_func;
     std::ostringstream outputbuffer;
@@ -166,22 +167,23 @@ bool test_assert(bool result, std::string objective, std::string path, size_t li
     std::shared_ptr<Test> test = get_current_test();
     Status assert_status;
     
-    if (!result) {
+    if (verbose || !result) {
+        test->outputbuffer << "    Assert"<< "@" << file << ":" << line << " -> ";
+    }
 
+    if (!result) {
         test->status = Status::Failed;
         assert_status = Status::Failed;
-    
-        test->outputbuffer << "    Assert Failed"<< "@" << file << ":" << line << "\t" << objective << std::endl;
-    
+        test->outputbuffer << "FAILED";
     } else {
-    
         assert_status = Status::Passed;
-    
-        if (verbose) {
-            test->outputbuffer << "    Assert Passed"<< "@" << file << ":" << line << "\t" << objective << std::endl;
-        }
-    
+        test->outputbuffer << "PASSED";
     }
+
+    if (verbose || !result) {
+        test->outputbuffer << "\t" << objective << std::endl;
+    }
+
     std::shared_ptr<Assert> _assert(new Assert());
     
     _assert->file = file;
@@ -279,7 +281,7 @@ int run_all_tests (int argc, char* argv[], std::string prefix) {
     }
     
     std::cout << "\nStarting testing for: " << prefix << std::endl << std::endl;
-
+    auto start_time = std::chrono::high_resolution_clock::now();
     for(std::map<std::string,std::shared_ptr<Test>>::iterator iterator = results.begin(); iterator != results.end(); iterator ++) {
         
         std::shared_ptr<Test> test = iterator->second;
@@ -289,31 +291,33 @@ int run_all_tests (int argc, char* argv[], std::string prefix) {
         std::cout << "Running test " << test_id << spacer;
         
         test->status = Status::Running;
+        auto test_start_time = std::chrono::high_resolution_clock::now();
         test->test_func();
-        
+        test->test_duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - test_start_time);
         if (test->status != Failed) {
 
             test->status = Passed;
        
-            std::cout << "Passed" << std::endl;
+            std::cout << "Passed (in " << test->test_duration.count() << "us)" << std::endl;
        
             if (verbose) {
-                std::cout << std::endl << test->outputbuffer.str() << std::endl;
+                std::cout << "\n    Objective: " << test->objective << '\n' << std::endl << test->outputbuffer.str() << std::endl;
             }
        
         }else {
 
             status = Status::Failed;
 
-            std::cout << "Failed" << std::endl; 
-            std::cerr << std::endl << test->outputbuffer.str() << std::endl;
+            std::cout << "Failed (in " << test->test_duration.count() << "us)" << std::endl; 
+            std::cerr << "\n    Objective: " << test->objective << '\n' << std::endl << test->outputbuffer.str() << std::endl;
 
         }
     std::cout.flush();
 }
+    std::chrono::microseconds duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time);
     size_t ran_tests = number_of_tests();
     size_t passed_tests = number_of_failed_tests();
-    std::cout << std::endl << "Finished running tests " << passed_tests << "/" <<  ran_tests << " tests ";
+    std::cout << std::endl << "Finished running tests " << passed_tests << "/" <<  ran_tests << " tests Passed  (in: "<< duration.count() << "us) ...... Test run ";
 
     if (status == Status::Failed) {
         std::cout << "Failed!\n" << std::endl;
