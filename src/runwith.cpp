@@ -8,6 +8,9 @@
 #include <cstdlib>
 #include <sstream>
 
+// Third party headers
+#include "boost/process.hpp"
+
 using std::string;
 using std::optional;
 using std::ostringstream;
@@ -49,6 +52,12 @@ int main(int argc, char* argv[]) {
         set_enviroment_variable(key,value);
     }
 
+    std::string command; 
+    std::vector<std::string> subcommand = args.command();
+    for(std::vector<std::string>::iterator command_iterator = subcommand.begin(); command_iterator != subcommand.end() ; command_iterator++) {
+        command += (*command_iterator);
+    }
+
     /**
      * WARNING Rant Incomming
      * 
@@ -61,4 +70,29 @@ int main(int argc, char* argv[]) {
      * boost can be removed and peace can be restored.
      * 
      */
+
+    boost::process::ipstream out_stream, error_stream;
+
+    boost::process::child child(command, boost::process::std_out > out_stream, boost::process::std_err > error_stream);
+
+    std::string out_line, error_line;
+
+    bool recived_input = false;
+
+    while(recived_input) {
+        recived_input = false;
+
+        if (error_stream && std::getline(error_stream,error_line) && !error_line.empty()) {
+            recived_input = true;
+            std::cerr << error_line << std::endl;
+        }
+
+        if (out_stream && std::getline(out_stream,out_line) && !out_line.empty()) {
+            recived_input = true;
+            std::cout << out_line << std::endl;
+        }
+    }
+
+
+    child.wait();
 }

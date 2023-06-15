@@ -15,7 +15,7 @@ file(GLOB SOURCES "src/*.cpp")
 add_executable(run_with ${SOURCES})
 target_compile_features(run_with PRIVATE cxx_std_17)
 target_include_directories(run_with PUBLIC inc)
-target_link_libraries (run_with ${Boost_LIBRARIES})
+target_link_libraries (run_with boost::boost)
 
 enable_testing()
 
