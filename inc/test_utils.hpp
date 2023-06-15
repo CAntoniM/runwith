@@ -291,7 +291,7 @@ int run_all_tests (int argc, char* argv[], std::string prefix) {
     }
     
     std::cout << "\nStarting testing for: " << prefix << std::endl << std::endl;
-    auto start_time = std::chrono::high_resolution_clock::now();
+    std::chrono::microseconds duration(0);
     for(std::map<std::string,std::shared_ptr<Test>>::iterator iterator = results.begin(); iterator != results.end(); iterator ++) {
         
         std::shared_ptr<Test> test = iterator->second;
@@ -307,7 +307,6 @@ int run_all_tests (int argc, char* argv[], std::string prefix) {
         if (test->status != Failed) {
 
             test->status = Passed;
-       
             std::cout << "Passed (in " << test->test_duration.count() << "us)" << std::endl;
        
             if (verbose) {
@@ -323,8 +322,8 @@ int run_all_tests (int argc, char* argv[], std::string prefix) {
 
         }
     std::cout.flush();
+    duration += test->test_duration;
 }
-    std::chrono::microseconds duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time);
     size_t ran_tests = number_of_tests();
     size_t passed_tests = number_of_failed_tests();
     std::cout << std::endl << "Finished running tests " << passed_tests << "/" <<  ran_tests << " tests Passed  (in: "<< duration.count() << "us) ...... Test run ";
