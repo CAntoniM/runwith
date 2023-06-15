@@ -4,6 +4,7 @@
 
 #include <string>
 #include <sstream>
+#include <fstream>
 #include <map>
 #include <vector>
 #include <functional>
@@ -36,15 +37,13 @@
  * #endif
  * 
  * 
- * 
  * Features:
  * 
  * below is a list of features that I want to add to the testing library so
  * that future cpp projects can just pick this header up.
  * 
- * 1. JSON file writing     -> this would allow us to write a json file with the test statues in it this would allow other scripts to parse and understand it
- * 2. ANSI Formatting       -> this would detect if we are outputting to a terminal or not and if we are then we would use ansi control codes to make the output more readable
- * 3. Specific test running -> this would allow people to put the test names at the end of the args to only run specific tests this could be useful if you want to focus your test runs down
+ * 1. ANSI Formatting       -> this would detect if we are outputting to a terminal or not and if we are then we would use ansi control codes to make the output more readable
+ * 2. Specific test running -> this would allow people to put the test names at the end of the args to only run specific tests this could be useful if you want to focus your test runs down
  */
 
 /**
@@ -58,13 +57,26 @@ enum Status {
     Failed,
 };
 
+std::string status_to_string(Status status) {
+    switch (status)
+    {
+        case Status::Unrun:
+            return "Unrun";
+        case Status::Running:
+            return "Running";
+        case Status::Passed:
+            return "Passed";
+        case Status::Failed:
+            return "Failed";
+    }
+    return "";
+}
 /**
  * @brief an object representing an assert that has happened during the test.
  * 
  */
 class Assert {
     public:
-    std::string name;
     std::string objective;
     std::string file;
     size_t line;
@@ -86,6 +98,38 @@ class Test {
     std::vector<std::shared_ptr<Assert>> asserts;
     std::function<void()> test_func;
     std::ostringstream outputbuffer;
+
+    std::string to_string() {
+        std::stringstream fmt;
+        fmt << "\t\""<< name <<"\": {\n"
+            << "\t\t\"objective\": \"" << objective << "\",\n"
+            << "\t\t\"status\": \"" << status_to_string(status) << "\",\n"
+            << "\t\t\"file\": \"" << file << "\",\n"
+            << "\t\t\"line_no\": " << line << ",\n"
+            << "\t\t\"duration\": " << test_duration.count() << ",\n"
+            << "\t\t\"asserts\": [\n";
+        
+        //using c rather array rather than iterator because i want to test if we are at the end or not
+        for (size_t index = 0 ; index < asserts.size(); index++) {
+            std::shared_ptr<Assert> assert = asserts.at(index);
+            fmt << "\t\t\t{\n"
+                << "\t\t\t\t\"objective\": \"" << assert->objective << "\",\n"
+                << "\t\t\t\t\"file\": \"" << assert->file << "\",\n"
+                << "\t\t\t\t\"line\": " << assert->line << ",\n"
+                << "\t\t\t\t\"status\": \"" << status_to_string(assert->status) << "\"\n"
+                << "\t\t\t}";
+            
+            if (index + 1 < asserts.size()) {
+                fmt << ",";
+            }
+            fmt << "\n";
+        }
+
+        fmt << "\t\t]\n" 
+            << "\t}";
+        
+        return fmt.str();
+    }
 };
 
 /**
@@ -100,6 +144,30 @@ std::map<std::string,std::shared_ptr<Test>> results;
  * 
  */
 bool verbose = false;
+
+void save_all_tests(std::string filename) {
+    std::stringstream fmt;
+    
+    fmt << "{\n";
+
+    for (std::map<std::string,std::shared_ptr<Test>>::iterator iterator = results.begin(); iterator != results.end(); iterator++) {
+        fmt << iterator->second->to_string();
+        iterator++;
+        if (iterator != results.end()) fmt << ",";
+        iterator--;
+        fmt << "\n";
+    } 
+
+    fmt << "}\n";
+
+    std::ofstream output_file(filename);
+
+    output_file << fmt.str();
+    output_file.flush();
+    output_file.close();  
+
+}
+
 
 /**
  * @brief Creates a test and registers it with the test list for running by the
@@ -283,10 +351,17 @@ int run_all_tests (int argc, char* argv[], std::string prefix) {
     
     Status status = Status::Running;
     size_t max_id_size = max_test_id_length(prefix);
+    bool should_save = false;
+    std::string file_name;
 
     for (int index = 0; index < argc; index++) {
         if (strcmp(argv[index],"-v") == 0 || strcmp(argv[index],"--verbose") == 0) {
             verbose = true;
+        }else if (strcmp(argv[index],"-o") == 0 || strcmp(argv[index],"--output") == 0) {
+            index++;
+            if (!(index < argc)) break;
+            should_save = true;
+            file_name = argv[index];
         }
     }
     
@@ -333,6 +408,9 @@ int run_all_tests (int argc, char* argv[], std::string prefix) {
         return 1;
     }
     std::cout << "Passed!\n" << std::endl;
+
+    if (should_save) save_all_tests(file_name);
+
     return 0;
 }
 
