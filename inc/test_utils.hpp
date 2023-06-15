@@ -43,7 +43,6 @@
  * that future cpp projects can just pick this header up.
  * 
  * 1. ANSI Formatting       -> this would detect if we are outputting to a terminal or not and if we are then we would use ansi control codes to make the output more readable
- * 2. Specific test running -> this would allow people to put the test names at the end of the args to only run specific tests this could be useful if you want to focus your test runs down
  */
 
 /**
@@ -82,6 +81,20 @@ class Assert {
     size_t line;
     Status status;
 };
+
+/**
+ * Helper function for generating out the spacer that is put in after the test id this is done to make the output pretty
+*/
+std::string generate_spacer(size_t max_length, size_t current_length, size_t extra_space) {
+    std::ostringstream spacer_buffer;
+    spacer_buffer << " ";
+    for (current_length; current_length <= max_length + extra_space; current_length++) {
+        spacer_buffer << ".";
+    }
+    spacer_buffer << " ";
+    return spacer_buffer.str();
+}
+
 
 /**
  * @brief an representation of a test all of its consituate components
@@ -129,6 +142,46 @@ class Test {
             << "\t}";
         
         return fmt.str();
+    }
+
+    /**
+     * This generates the unique idenfier for the test given
+    */
+    std::string generate_test_id(std::string prefix) {
+        std::ostringstream id_stream;
+        id_stream << prefix << "::" << this->name << "@" << this->file << ":" << this->line;
+        return id_stream.str();
+    }
+
+    std::chrono::microseconds run(std::string prefix, size_t max_id_size, bool verbose) {
+        std::string test_id = generate_test_id(prefix);
+        std::string spacer = generate_spacer(max_id_size,test_id.length(),4);
+        
+        std::cout << "Running test " << test_id << spacer;
+        
+        this->status = Status::Running;
+        auto test_start_time = std::chrono::high_resolution_clock::now();
+        this->test_func();
+        this->test_duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - test_start_time);
+        if (this->status != Failed) {
+
+            this->status = Passed;
+            std::cout << "Passed (in " << this->test_duration.count() << "us)" << std::endl;
+    
+            if (verbose) {
+                std::cout << "\n    Objective: " << this->objective << '\n' << std::endl << this->outputbuffer.str() << std::endl;
+            }
+    
+        }else {
+
+            status = Status::Failed;
+
+            std::cout << "Failed (in " << this->test_duration.count() << "us)" << std::endl; 
+            std::cerr << "\n    Objective: " << this->objective << '\n' << std::endl << this->outputbuffer.str() << std::endl;
+
+        }
+        std::cout.flush();
+        return this->test_duration;
     }
 };
 
@@ -275,21 +328,12 @@ bool test_assert(bool result, std::string objective, std::string path, size_t li
 }
 
 /**
- * This generates the unique idenfier for the test given
-*/
-std::string generate_test_id(std::string prefix, std::shared_ptr<Test> test) {
-    std::ostringstream id_stream;
-    id_stream << prefix << "::" << test->name << "@" << test->file << ":" << test->line;
-    return id_stream.str();
-}
-
-/**
  * Returns the maximum length of a test id
 */
 size_t max_test_id_length(std::string prefix) {
     size_t max_length = 0;
     for(std::map<std::string,std::shared_ptr<Test>>::iterator iterator = results.begin(); iterator != results.end(); iterator++) {
-        size_t length = generate_test_id(prefix,iterator->second).length();
+        size_t length = iterator->second->generate_test_id(prefix).length();
 
         if (length > max_length) {
             max_length = length;
@@ -300,22 +344,9 @@ size_t max_test_id_length(std::string prefix) {
 }
 
 /**
- * This returns the number of tests that have been registered
-*/
-size_t number_of_tests() {
-    size_t count = 0;
-
-    for(std::map<std::string,std::shared_ptr<Test>>::iterator iterator = results.begin(); iterator != results.end(); iterator++) {
-        count++;
-    }
-
-    return count;
-}
-
-/**
  * This is a helper function for getting the number of tests that have failed at this point
 */
-size_t number_of_failed_tests() {
+size_t number_of_tests_passed() {
     size_t count = 0;
 
     for(std::map<std::string,std::shared_ptr<Test>>::iterator iterator = results.begin(); iterator != results.end(); iterator++) {
@@ -325,19 +356,6 @@ size_t number_of_failed_tests() {
     }
 
     return count;
-}
-
-/**
- * Helper function for generating out the spacer that is put in after the test id this is done to make the output pretty
-*/
-std::string generate_spacer(size_t max_length, size_t current_length, size_t extra_space) {
-    std::ostringstream spacer_buffer;
-    spacer_buffer << " ";
-    for (current_length; current_length <= max_length + extra_space; current_length++) {
-        spacer_buffer << ".";
-    }
-    spacer_buffer << " ";
-    return spacer_buffer.str();
 }
 
 /**
@@ -353,54 +371,55 @@ int run_all_tests (int argc, char* argv[], std::string prefix) {
     size_t max_id_size = max_test_id_length(prefix);
     bool should_save = false;
     std::string file_name;
+    int index = 1;
+    std::vector<std::string> tests_to_run;
 
-    for (int index = 0; index < argc; index++) {
+    for (;index < argc; index++) {
+        
         if (strcmp(argv[index],"-v") == 0 || strcmp(argv[index],"--verbose") == 0) {
             verbose = true;
         }else if (strcmp(argv[index],"-o") == 0 || strcmp(argv[index],"--output") == 0) {
             index++;
-            if (!(index < argc)) break;
+            if (!(index < argc)) {
+                std::cerr << "ERROR: no output file given" << std::endl;
+                return -1;
+            }
             should_save = true;
             file_name = argv[index];
         }
+        break;
+    }
+
+    for (;index < argc; index ++) {
+        tests_to_run.push_back(argv[index]);
     }
     
+    size_t ran_tests = 0;
     std::cout << "\nStarting testing for: " << prefix << std::endl << std::endl;
     std::chrono::microseconds duration(0);
-    for(std::map<std::string,std::shared_ptr<Test>>::iterator iterator = results.begin(); iterator != results.end(); iterator ++) {
-        
-        std::shared_ptr<Test> test = iterator->second;
-        std::string test_id = generate_test_id(prefix,test);
-        std::string spacer = generate_spacer(max_id_size,test_id.length(),4);
-        
-        std::cout << "Running test " << test_id << spacer;
-        
-        test->status = Status::Running;
-        auto test_start_time = std::chrono::high_resolution_clock::now();
-        test->test_func();
-        test->test_duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - test_start_time);
-        if (test->status != Failed) {
+    
+    if (tests_to_run.size() != 0) {
+        for(std::vector<std::string>::iterator iterator = tests_to_run.begin(); iterator != tests_to_run.end(); iterator++) {
+            ran_tests++;
 
-            test->status = Passed;
-            std::cout << "Passed (in " << test->test_duration.count() << "us)" << std::endl;
-       
-            if (verbose) {
-                std::cout << "\n    Objective: " << test->objective << '\n' << std::endl << test->outputbuffer.str() << std::endl;
+            std::shared_ptr<Test> test = results.at(*iterator);
+
+            if (test->name != (*iterator)) {
+                std::cerr << "ERROR: No test found with name " << *iterator << std::endl;
+                return -1;
             }
-       
-        }else {
 
-            status = Status::Failed;
-
-            std::cout << "Failed (in " << test->test_duration.count() << "us)" << std::endl; 
-            std::cerr << "\n    Objective: " << test->objective << '\n' << std::endl << test->outputbuffer.str() << std::endl;
-
+            duration += test->run(prefix,max_id_size,verbose);
         }
-    std::cout.flush();
-    duration += test->test_duration;
-}
-    size_t ran_tests = number_of_tests();
-    size_t passed_tests = number_of_failed_tests();
+    } else {    
+        for(std::map<std::string,std::shared_ptr<Test>>::iterator iterator = results.begin(); iterator != results.end(); iterator ++) {
+            ran_tests++;
+            duration += iterator->second->run(prefix,max_id_size,verbose);
+        }
+    }
+
+    
+    size_t passed_tests = number_of_tests_passed();
     std::cout << std::endl << "Finished running tests " << passed_tests << "/" <<  ran_tests << " tests Passed  (in: "<< duration.count() << "us) ...... Test run ";
 
     if (status == Status::Failed) {
