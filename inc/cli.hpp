@@ -17,7 +17,7 @@ using std::vector;
  */
 class Cli {
     private:
-        string _enviroment_file_path;
+        string _enviroment_file_path = ".env";
         bool _verbose = false;
         vector<string> _command;
     public:

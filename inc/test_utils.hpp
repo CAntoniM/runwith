@@ -35,6 +35,16 @@
  * TEST(foo, this is a test of food functonaility) {...}
  * #endif
  * 
+ * 
+ * 
+ * Features:
+ * 
+ * below is a list of features that I want to add to the testing library so
+ * that future cpp projects can just pick this header up.
+ * 
+ * 1. JSON file writing     -> this would allow us to write a json file with the test statues in it this would allow other scripts to parse and understand it
+ * 2. ANSI Formatting       -> this would detect if we are outputting to a terminal or not and if we are then we would use ansi control codes to make the output more readable
+ * 3. Specific test running -> this would allow people to put the test names at the end of the args to only run specific tests this could be useful if you want to focus your test runs down
  */
 
 /**
@@ -177,7 +187,7 @@ bool test_assert(bool result, std::string objective, std::string path, size_t li
         test->outputbuffer << "FAILED";
     } else {
         assert_status = Status::Passed;
-        test->outputbuffer << "PASSED";
+        if (verbose) test->outputbuffer << "PASSED";
     }
 
     if (verbose || !result) {
