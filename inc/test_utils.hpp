@@ -386,6 +386,25 @@ int run_all_tests (int argc, char* argv[], std::string prefix) {
             }
             should_save = true;
             file_name = argv[index];
+            
+        }else if (strcmp(argv[index],"-h") == 0 || strcmp(argv[index],"--help") == 0) {
+            
+            std::string exe_name = argv[0];
+            
+            #ifdef _WIN32
+                exe_name = exe_name.substr(exe_name.find_last_of("\\") + 1); 
+            #else
+                exe_name = exe_name.substr(exe_name.find_last_of("/") + 1); 
+            #endif
+
+            std::cout << "\nUsage: " << exe_name << " [Options] [Test]... \n" 
+                      << "\n"
+                      << "Options:\n"
+                      << "  -h | --help                This prints the text you are reading now.\n"
+                      << "  -o | --output <Filename>   This enables outputting of the json results file and where to write it to.\n"
+                      << "  -v | --verbose             This enables verbose output printing the status of every test and assert.\n"
+                      << std::endl;
+            return 0;
         }
         break;
     }
